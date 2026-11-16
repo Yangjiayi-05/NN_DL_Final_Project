@@ -6,8 +6,7 @@ from transformers import BertTokenizer
 
 class SentimentDataset(Dataset):
     def __init__(self, tokenizer_name='bert-base-chinese', max_len=128):
-        print("正在从 Hugging Face 加载 ChnSentiCorp 数据集...")
-        # 自动下载数据集，加入 trust_remote_code=True 解决高版本库报错问题
+        print("正在加载 ChnSentiCorp 数据集...")
         raw_dataset = load_dataset(
             "lansinuote/ChnSentiCorp",
             split="train[:3000]"
@@ -24,7 +23,8 @@ class SentimentDataset(Dataset):
         text = str(self.data[idx]['text'])
         label = int(self.data[idx]['label'])
 
-        encoding = self.tokenizer.encode_plus(
+        # 修复报错：将 encode_plus 替换为 __call__ 调用
+        encoding = self.tokenizer(
             text,
             add_special_tokens=True,
             max_length=self.max_len,

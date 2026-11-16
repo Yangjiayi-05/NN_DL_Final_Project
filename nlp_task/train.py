@@ -6,37 +6,30 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
-from torch.optim import AdamW
+from torch.optim import AdamW  # 修复报错：使用 PyTorch 原生的 AdamW
 
-# 确保能找到当前目录的文件
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dataset import SentimentDataset
 from model import TransformerSentimentClassifier
 
 
 def train_nlp():
-    # ================= 配置区域 =================
-    EPOCHS = 5  # 修改为 5 个 Epoch
+    EPOCHS = 5
     BATCH_SIZE = 32
     LEARNING_RATE = 2e-5
     MAX_LEN = 128
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # ============================================
 
     print(f"当前设备: {device}")
-    # 确保结果保存文件夹存在
     os.makedirs('results', exist_ok=True)
 
-    # 1. 数据加载
     train_dataset = SentimentDataset(max_len=MAX_LEN)
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    # 2. 模型初始化
     model = TransformerSentimentClassifier(num_classes=2).to(device)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
-    # 3. 训练
     print("开始训练 NLP 任务 (Transformer)...")
     model.train()
     for epoch in range(EPOCHS):
@@ -55,7 +48,6 @@ def train_nlp():
 
         print(f"Epoch {epoch + 1}/{EPOCHS} | Average Loss: {total_loss / len(train_loader):.4f}")
 
-    # 4. 评估与生成混淆矩阵
     print("生成可视化图表...")
     model.eval()
     all_preds, all_labels = [], []
@@ -77,7 +69,6 @@ def train_nlp():
             last_attentions = attn
             last_input_ids = input_ids
 
-    # 绘制混淆矩阵
     cm = confusion_matrix(all_labels, all_preds)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
@@ -89,11 +80,9 @@ def train_nlp():
     plt.tight_layout()
     plt.savefig('results/nlp_confusion_matrix.png')
 
-    # 5. 绘制注意力热力图
     attention_matrix = last_attentions[-1][0][0].cpu().numpy()
     tokens = train_dataset.tokenizer.convert_ids_to_tokens(last_input_ids[0].cpu().numpy())
 
-    # 截取前 25 个 token 展示
     seq_len = min(25, len(tokens))
     attention_matrix = attention_matrix[:seq_len, :seq_len]
     tokens = tokens[:seq_len]
