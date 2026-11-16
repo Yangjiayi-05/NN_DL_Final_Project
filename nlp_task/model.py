@@ -9,10 +9,11 @@ class TransformerSentimentClassifier(nn.Module):
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
 
     def forward(self, input_ids, attention_mask):
+        # output_attentions=True 用于提取注意力权重进行可视化
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            output_attentions=True # 用于可视化
+            output_attentions=True
         )
         pooled_output = outputs.pooler_output
         logits = self.classifier(self.dropout(pooled_output))

@@ -1,39 +1,48 @@
-import sys, os
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # 确保能找到同级目录的 model.py
-
+import os
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+
+# 确保能找到当前目录的 model.py
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from model import ResNetMNIST
 
 
-def train_mnist(epochs=3, batch_size=64, lr=0.001):
-    os.makedirs('results', exist_ok=True)  # 确保 results 文件夹存在
+def train_cv():
+    # 1. 配置参数
+    epochs = 5
+    batch_size = 64
+    lr = 0.001
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"当前设备: {device}")
 
+    # 确保结果保存文件夹存在
+    os.makedirs('results', exist_ok=True)
+
+    # 2. 数据加载
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
-
-    # 自动下载数据集
     train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
     test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False)
 
+    # 3. 模型与优化器
     model = ResNetMNIST().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     train_losses, test_accs = [], []
 
+    # 4. 开始训练
+    print("开始训练 CV 任务 (ResNet)...")
     for epoch in range(1, epochs + 1):
         model.train()
         running_loss = 0.0
@@ -62,7 +71,7 @@ def train_mnist(epochs=3, batch_size=64, lr=0.001):
         test_accs.append(acc)
         print(f'Epoch {epoch}/{epochs}: Loss = {avg_loss:.4f}, Test Acc = {acc:.2f}%')
 
-    # 绘图
+    # 5. 绘图
     fig, ax1 = plt.subplots(figsize=(8, 5))
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss', color='tab:red')
@@ -81,4 +90,4 @@ def train_mnist(epochs=3, batch_size=64, lr=0.001):
 
 
 if __name__ == '__main__':
-    train_mnist()
+    train_cv()
