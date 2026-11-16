@@ -4,7 +4,7 @@ from transformers import BertModel
 class TransformerSentimentClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(TransformerSentimentClassifier, self).__init__()
-        self.bert = BertModel.from_pretrained('bert-base-chinese')
+        self.bert = BertModel.from_pretrained('bert-base-chinese', attn_implementation="eager")
         self.dropout = nn.Dropout(0.3)
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
 
