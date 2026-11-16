@@ -1,17 +1,18 @@
-import os
+import sys, os
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # 确保能找到同级目录的 model.py
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from .model import ResNetMNIST
+from model import ResNetMNIST
 
 
-def train_mnist(epochs=5, batch_size=64, lr=0.001):
-    # 确保 results 文件夹存在
-    os.makedirs('results', exist_ok=True)
-
+def train_mnist(epochs=3, batch_size=64, lr=0.001):
+    os.makedirs('results', exist_ok=True)  # 确保 results 文件夹存在
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"当前设备: {device}")
 
@@ -21,7 +22,7 @@ def train_mnist(epochs=5, batch_size=64, lr=0.001):
         transforms.Normalize((0.1307,), (0.3081,))
     ])
 
-    # 自动下载并加载数据
+    # 自动下载数据集
     train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
     test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -48,6 +49,7 @@ def train_mnist(epochs=5, batch_size=64, lr=0.001):
         avg_loss = running_loss / len(train_loader)
         train_losses.append(avg_loss)
 
+        # 测试
         model.eval()
         correct = 0
         with torch.no_grad():
@@ -76,3 +78,7 @@ def train_mnist(epochs=5, batch_size=64, lr=0.001):
     fig.tight_layout()
     plt.savefig('results/cv_metrics.png')
     print("✅ CV 任务完成，图表已保存至 results/cv_metrics.png")
+
+
+if __name__ == '__main__':
+    train_mnist()
