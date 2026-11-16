@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
-from torch.optim import AdamW  # 修复报错：使用 PyTorch 原生的 AdamW
+from torch.optim import AdamW
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dataset import SentimentDataset
@@ -40,7 +40,8 @@ def train_nlp():
             labels = batch['label'].to(device)
 
             optimizer.zero_grad()
-            logits, _ = model(input_ids, attention_mask)
+            # 训练时关闭 attentions 加快速度
+            logits, _ = model(input_ids, attention_mask, output_attentions=False)
             loss = criterion(logits, labels)
             loss.backward()
             optimizer.step()
@@ -60,7 +61,8 @@ def train_nlp():
             attention_mask = batch['attention_mask'].to(device)
             labels = batch['label'].to(device)
 
-            logits, attn = model(input_ids, attention_mask)
+            # 评估时开启 attentions 用于画图
+            logits, attn = model(input_ids, attention_mask, output_attentions=True)
             preds = torch.argmax(logits, dim=1).cpu().numpy()
 
             all_preds.extend(preds)
@@ -69,6 +71,7 @@ def train_nlp():
             last_attentions = attn
             last_input_ids = input_ids
 
+    # 绘制混淆矩阵 (纯英文)
     cm = confusion_matrix(all_labels, all_preds)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
@@ -80,14 +83,17 @@ def train_nlp():
     plt.tight_layout()
     plt.savefig('results/nlp_confusion_matrix.png')
 
+    # 绘制注意力热力图 (纯英文，避免乱码)
     attention_matrix = last_attentions[-1][0][0].cpu().numpy()
-    tokens = train_dataset.tokenizer.convert_ids_to_tokens(last_input_ids[0].cpu().numpy())
 
-    seq_len = min(25, len(tokens))
+    seq_len = min(25, attention_matrix.shape[0])
     attention_matrix = attention_matrix[:seq_len, :seq_len]
-    tokens = tokens[:seq_len]
+
+    # 【修改点】：用 Token 索引替代中文，确保在所有系统下都正常
+    tokens = [f"Token_{i}" for i in range(seq_len)]
 
     plt.figure(figsize=(12, 10))
+    plt.rcParams['font.sans-serif'] = ['Arial']  # 强制英文
     sns.heatmap(attention_matrix, xticklabels=tokens, yticklabels=tokens, cmap='viridis')
     plt.title('Transformer Self-Attention Heatmap (Last Layer)')
     plt.xticks(rotation=45)
