@@ -9,9 +9,8 @@ class SentimentDataset(Dataset):
         print("正在从 Hugging Face 加载 ChnSentiCorp 数据集...")
         # 自动下载数据集，加入 trust_remote_code=True 解决高版本库报错问题
         raw_dataset = load_dataset(
-            "seamew/ChnSentiCorp",
-            split="train[:3000]",
-            trust_remote_code=True
+            "lansinuote/ChnSentiCorp",
+            split="train[:3000]"
         )
 
         self.data = raw_dataset
